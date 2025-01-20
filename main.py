@@ -28,12 +28,6 @@ def watermark():
                 scale_factor = min(base.size) // 20
                 font_size = max(10, scale_factor)
 
-                loc_dict = {'Top Left corner': (30, 10),
-                            'Top Right Corner': (base.width - 250, 10),
-                            'Bottom Left Corner': (30, base.height - 70),
-                            'Bottom Right Corner': (base.width - 250, base.height - 70),
-                            'Center': (base.width // 2 - 125, base.height // 2 - 25),
-                            }
                 # make a blank image for the text, initialized to transparent text color
                 txt = Image.new("RGBA", base.size, (255, 255, 255, 0))
                 # Font
@@ -41,6 +35,16 @@ def watermark():
                 # Drawing Text
                 d = ImageDraw.Draw(txt)
 
+                # Below code is to fix the issue caused by different resolution images causing misplacing watermark.
+                bbox = d.textbbox((0, 0), marker, font=fnt)
+                text_width, text_height = bbox[2] - bbox[0], bbox[3] - bbox[1]
+                loc_dict = {
+                    'Top Left corner': (int(base.width * 0.05), int(base.height * 0.05)),
+                    'Top Right Corner': (int(base.width * 0.95 - text_width), int(base.height * 0.05)),
+                    'Bottom Left Corner': (int(base.width * 0.05), int(base.height * 0.95 - text_height)),
+                    'Bottom Right Corner': (int(base.width * 0.95 - text_width), int(base.height * 0.95 - text_height)),
+                    'Center': (int(base.width * 0.5 - text_width / 2), int(base.height * 0.5 - text_height / 2)),
+                }
                 # draw text, half opacity
                 for key, value in loc_dict.items():
                     if key == loc:
@@ -51,7 +55,6 @@ def watermark():
                 # Convert to RGB if the output format doesn't support transparency
                 output_format = os.path.splitext(img)[1].lower()
                 if output_format in [".jpg", ".jpeg", ".bmp"]:
-                    print("YES")
                     out = out.convert("RGB")
 
 # Preview has been disabled because it causes an issue with .jpg format where watermark doesn't apply
@@ -68,6 +71,8 @@ def watermark():
                     save_path = os.path.join(os.path.dirname(img), name + output_format)
                     out.save(save_path)
                     mb.showinfo(title="Saved", message=f"Watermarked image saved at {save_path}")
+                    mark.delete(0, END)
+                    name_field.delete(0, END)
                 else:
                     mark.delete(0, END)
                     name_field.delete(0, END)
@@ -83,9 +88,12 @@ def watermark():
 window = Tk()
 window.title("Water Marker")
 window.config(padx=20,pady=20)
+window.resizable(False, False)
+window.iconbitmap('assets/icon.ico')
+
 
 # Labels-----------------------------------------------
-title = Label(text="Water Marker",padx=20, pady=20)
+title = Label(text="Water Marker",padx=20, pady=20, font=("Arial",16, "bold"))
 title.grid(row = 0,column = 0, columnspan = 2)
 
 file = Label(text="Upload image :",padx=20, pady=10)
